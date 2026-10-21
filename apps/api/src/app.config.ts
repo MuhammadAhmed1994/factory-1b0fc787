@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { INestApplication, Logger, UnprocessableEntityException, ValidationPipe } from '@nestjs/common';
+import { BadRequestException, INestApplication, Logger, ValidationPipe } from '@nestjs/common';
 
 // Written by the factory: the one place the api reads its environment. No .env file is loaded and
 // no secret or host is hard-coded: production must set what it needs and fails at boot if it doesn't;
@@ -58,13 +58,20 @@ export const config = {
 export function configureApp(app: INestApplication): void {
   void config.jwtSecret;
   app.enableCors({ origin: corsOrigins(), credentials: true });
-  // whitelist/forbidNonWhitelisted reject unknown fields; use the status the Spec requires (often 422).
+  // Validation failures are 400 with { message, errors: [{ field, message }] } (ADR-6).
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
-      exceptionFactory: (errors) => new UnprocessableEntityException(errors),
+      exceptionFactory: (errors) =>
+        new BadRequestException({
+          statusCode: 400,
+          message: 'Validation failed',
+          errors: errors.flatMap((e) =>
+            Object.values(e.constraints ?? {}).map((message) => ({ field: e.property, message })),
+          ),
+        }),
     }),
   );
 }

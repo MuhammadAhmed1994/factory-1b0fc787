@@ -46,7 +46,7 @@ describe('expense form', () => {
     expect(m.createExpense).not.toHaveBeenCalled()
   })
 
-  it('AC-13/25 saves from one form and shows success message', async () => {
+  it('AC-13 saves from one form and shows success message', async () => {
     m.createExpense.mockResolvedValue(exp())
     wrap(<ExpenseForm />)
     await screen.findByRole('option', { name: 'Food' })
@@ -108,7 +108,26 @@ describe('expenses list', () => {
 })
 
 describe('dashboard', () => {
-  it('AC-16/25 shows total, count, recent and add link', async () => {
+  it('AC-25 dashboard links to the add form in one navigation action', async () => {
+    m.dashboard.mockResolvedValue({ month: '2025-03', total: '0.00', count: 0, recent: [] })
+    wrap(<DashboardView />)
+    const links = await screen.findAllByRole('link', { name: /Add expense/ })
+    for (const l of links) expect(l).toHaveAttribute('href', '/expenses/new')
+  })
+
+  it('AC-25 a new expense is saved from the single form without extra screens', async () => {
+    m.createExpense.mockResolvedValue(exp())
+    wrap(<ExpenseForm />)
+    await screen.findByRole('option', { name: 'Food' })
+    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Tea' } })
+    fireEvent.change(screen.getByLabelText('Amount ($)'), { target: { value: '2' } })
+    fireEvent.change(screen.getByLabelText('Category'), { target: { value: 'food' } })
+    expect((screen.getByLabelText('Date') as HTMLInputElement).value).not.toBe('')
+    fireEvent.click(screen.getByRole('button', { name: 'Add expense' }))
+    await waitFor(() => expect(m.createExpense).toHaveBeenCalledTimes(1))
+  })
+
+  it('AC-16 shows total, count, recent and add link', async () => {
     m.dashboard.mockResolvedValue({ month: '2025-03', total: '15.70', count: 2, recent: [exp()] })
     wrap(<DashboardView />)
     expect(await screen.findByTestId('total')).toHaveTextContent('$15.70')

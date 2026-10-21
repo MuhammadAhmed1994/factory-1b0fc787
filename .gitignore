@@ -9,3 +9,5 @@ coverage/
 next-env.d.ts
 prisma/*.db
 prisma/*.db-journal
+*.db
+*.db-journal
